@@ -1,6 +1,6 @@
 # Borg Helper
 
-Borg Helper is a script which allows you to define a list of repositories for [borgbackup](https://www.borgbackup.org) and execute borg commands on those repositories.
+Borg Helper is a script which allows you to define a list of repositories for [BorgBackup](https://www.borgbackup.org) and execute borg commands on those repositories.
 
 The script looks for configs at the following locations (merged in that order):
 
