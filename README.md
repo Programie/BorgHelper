@@ -14,6 +14,15 @@ The repository configuration should have at least a `repository` property specif
 
 If your borg binary is not in the default search paths, you might specify the path to it using the `borg-binary` property.
 
+## Requirements
+
+* Python 3.10+
+* [BorgBackup](https://www.borgbackup.org) (tested with version 1.2 but any version of it should work)
+
+## Installation
+
+Simply download the [borg-helper.py](borg-helper.py) from this repository, store it somewhere and make it executable.
+
 ## Aliases
 
 Borg Helper also allows you to define a list of aliases as known from your command line shell or git.
