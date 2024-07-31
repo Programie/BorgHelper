@@ -37,6 +37,20 @@ For example, you might define an alias `create` which will resolve to `create --
 
 It is possible to use shell syntax like `$()` in aliases (as done with `$(date +%Y-%m-%d_%H:%M)` in the example configuration bellow). The full borg command is passed to your shell.
 
+## Additional commands
+
+Borg Helper has some additional commands which wrap around Borg.
+
+### list-archives
+
+The `list-archives` command can be used to search for specific paths or pattern in all archives of a specific repository.
+
+The usage of the command is quite simple: `borg-helper.py my-repository list-archives`
+
+The command will list all files in all archives of the specified repository. You might specify any arguments also available in `borg list`, like the path to see which archives contain a specific path.
+
+Example: `borg-helper.py my-repository list-archives some/path/inside/the/backup`
+
 ## Example configuration
 
 ```json

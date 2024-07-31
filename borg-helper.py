@@ -59,7 +59,7 @@ class BorgHelper:
     def get_repository(self, name: str) -> Optional[dict]:
         return self.repositories.get(name)
 
-    def execute_borg(self, repository_name: str, arguments: list[str]) -> int:
+    def execute_borg(self, repository_name: str, arguments: list, **kwargs) -> Optional[subprocess.CompletedProcess]:
         borg_env = os.environ.copy()
         repository_config = self.get_repository(repository_name)
 
@@ -88,15 +88,42 @@ class BorgHelper:
 
         if self.ask_before_execute:
             if input("Are you sure to execute the command above? [Y/n] ").lower().startswith("n"):
+                return None
+
+        return subprocess.run(command_line, env=borg_env, shell=True, **kwargs)
+
+    def execute_custom_borg_command(self, repository_name: str, arguments: list) -> Optional[int]:
+        if len(arguments) and arguments[0] == "list-archives":
+            borg_process = self.execute_borg(repository_name, ["list", "--short"], stdout=subprocess.PIPE, check=True)
+            if not borg_process:
                 return 1
 
-        with subprocess.Popen(command_line, env=borg_env, shell=True) as borg_process:
-            borg_process.wait()
+            highest_exit_code = 0
 
-            return borg_process.returncode
+            for archive in borg_process.stdout.decode("utf-8").splitlines():
+                borg_process = self.execute_borg(repository_name, ["list", f"::{archive}"] + arguments[1:])
+                if not borg_process:
+                    continue
+
+                highest_exit_code = max(highest_exit_code, borg_process.returncode)
+
+            return highest_exit_code
+
+        return None
+
+    def execute_command(self, repository_name: str, arguments: list) -> int:
+        exit_code = self.execute_custom_borg_command(repository_name, arguments)
+        if exit_code is not None:
+            return exit_code
+
+        borg_process = self.execute_borg(repository_name, arguments)
+        if not borg_process:
+            return 1
+
+        return borg_process.returncode
 
     @staticmethod
-    def resolve_alias(arguments: list[str], aliases: dict[str, str]) -> list[str]:
+    def resolve_alias(arguments: list, aliases: dict) -> list:
         if not len(arguments):
             return []
 
@@ -111,6 +138,7 @@ def main():
     if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] == "-i"):
         print("Usage: {} [-i] <repository> [borg arguments]".format(sys.argv[0]), file=sys.stderr)
         print("       {} list".format(sys.argv[0]), file=sys.stderr)
+        print("       {} <repository> list-archives <borg list arguments>".format(sys.argv[0]), file=sys.stderr)
         print("")
         print("Options:")
         print(" -i    Ask before executing borg command")
@@ -142,7 +170,7 @@ def main():
         arguments = sys.argv[2:]
 
     try:
-        return borg_helper.execute_borg(repository_name, arguments)
+        return borg_helper.execute_command(repository_name, arguments)
     except ConfigError as error:
         print(error, file=sys.stderr)
 
