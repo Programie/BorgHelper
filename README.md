@@ -116,3 +116,13 @@ After resolving the repository specific alias, the arguments resolve to `create 
 This results in the arguments finally being resolved to `create --progress --stats --verbose ::$(date +%Y-%m-%d_%H:%M) /path/to/some/source` and passed to borg.
 
 If you are unsure whether the fully resolved command is the correct one, you might add `-i` before the repository name to interactively ask whether to execute that command. This is especially useful if you want to execute a destructive command like `prune`.
+
+## Troubleshooting
+
+In case something does not work as expected (for example, the script does not know your configured repository), you might like to enable debug logging by adding `-d` before the repository argument:
+
+```
+borg-helper.py -d my-repository info
+```
+
+Adding this option will log more details like where Borg Helper looks for configuration files or which repositories are loaded.
