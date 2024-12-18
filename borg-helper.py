@@ -14,12 +14,16 @@ class ConfigError(RuntimeError):
 
 
 class BorgHelper:
-    def __init__(self):
+    def __init__(self, config_paths: list[str] = None):
         self.config_paths = [
+            Path(__file__).parent.joinpath("borg-helper.json"),
             "/etc/borg-helper.json",
             "~/.config/borg-helper.json",
             "borg-helper.json"
         ]
+
+        if config_paths:
+            self.config_paths.extend(config_paths)
 
         self.ask_before_execute = False
         self.borg_binary = "borg"
@@ -190,7 +194,9 @@ def main():
 
     logging.basicConfig(level=log_level, format="%(levelname)s %(message)s")
 
-    borg_helper = BorgHelper()
+    config_paths = list(filter(None, [path.strip() for path in os.environ.get("BORG_HELPER_CONFIGS", "").split(":")]))
+
+    borg_helper = BorgHelper(config_paths)
     borg_helper.load_configs()
 
     repositories = borg_helper.get_repositories()

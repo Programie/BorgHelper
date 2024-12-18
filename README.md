@@ -4,9 +4,12 @@ Borg Helper is a script which allows you to define a list of repositories for [B
 
 The script looks for configs at the following locations (merged in that order):
 
+* `borg-helper.json` in the directory containing the `borg-helper.py`
 * `/etc/borg-helper.json`
 * `~/.config/borg-helper.json`
 * `borg-helper.json` in the current directory
+
+Additional paths can be specified using the `BORG_HELPER_CONFIGS` environment variable (separated by `:` just like the `PATH` environment variable).
 
 The configuration is in JSON and expects at least a `repositories` property containing a map with all of your repositories. Each entry consists of a key (the repository name) and the configuration for this repository.
 
