@@ -1,0 +1,19 @@
+{
+  "borg_binary": "/path/to/borg",
+  "aliases": {
+    "create": "create --progress --stats --verbose",
+    "prune": "prune --list --stats --verbose"
+  },
+  "repositories": {
+    "my-repository": {
+      "repository": "/path/to/your/repository",
+      "aliases": {
+        "create": "create ::$(date +%Y-%m-%d_%H:%M)"
+      }
+    },
+    "another-repository": {
+      "repository": "ssh://user@example.com/path/to/repository",
+      "passphrase": "YourBorgPassphrase"
+    }
+  }
+}
