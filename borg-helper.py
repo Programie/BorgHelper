@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -30,24 +31,40 @@ class BorgHelper:
             self.load_config(Path(path).expanduser())
 
     def load_config(self, path: Path) -> bool:
-        if not path.is_file():
-            return False
+        logging.debug(f"Trying to load config from {path}")
 
-        with path.open("r") as config_file:
-            config = json.load(config_file)
+        try:
+            with path.open("r") as config_file:
+                config = json.load(config_file)
 
-            if "borg_binary" in config:
-                self.borg_binary = config["borg_binary"]
+                if "borg_binary" in config:
+                    self.borg_binary = config["borg_binary"]
+                    logging.debug(f"Using '{self.borg_binary}' as borg binary")
 
-            if "aliases" in config:
-                self.command_aliases.update(config["aliases"])
+                aliases = config.get("aliases", {})
+                logging.debug(f"Config contains {len(aliases)} aliases")
 
-            for repository_name, repository_config in config.get("repositories", {}).items():
-                self.add_repository(repository_name, repository_config)
+                for alias_name, alias_value in aliases.items():
+                    self.add_alias(alias_name, alias_value)
+
+                repositories = config.get("repositories", {})
+                logging.debug(f"Config contains {len(repositories)} repositories")
+
+                for repository_name, repository_config in repositories.items():
+                    self.add_repository(repository_name, repository_config)
+        except FileNotFoundError as error:
+            logging.debug(error)  # Log as 'debug' as a non-existing file is OK (we always check all possible paths)
 
         return True
 
+    def add_alias(self, name: str, value: str) -> None:
+        logging.debug(f"Adding alias '{name}'")
+
+        self.command_aliases[name] = value
+
     def add_repository(self, name: str, config: dict) -> None:
+        logging.debug(f"Adding repository '{name}'")
+
         if name not in self.repositories:
             self.repositories[name] = {}
 
@@ -134,15 +151,44 @@ class BorgHelper:
         return aliases[command].split(" ") + arguments[1:]
 
 
+def parse_arguments():
+    options = set()
+    arguments = []
+
+    for index, argument in enumerate(sys.argv[1:]):
+        # Options start with "-" (i.e. "-d", "-i" or a combination like "-di")
+        if argument.startswith("-") and len(argument) > 1:
+            for character in argument.strip("-"):
+                options.add(character)
+        else:
+            # The first non-option argument starts the argument list
+            # Any options after the first non-option argument are added as normal arguments (i.e. to pass them to borg)
+            arguments = sys.argv[index + 1:]
+            break
+
+    return options, arguments
+
+
 def main():
-    if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] == "-i"):
-        print("Usage: {} [-i] <repository> [borg arguments]".format(sys.argv[0]), file=sys.stderr)
+    options, arguments = parse_arguments()
+
+    if not arguments or "h" in options:
+        print("Usage: {} [-d] [-i] <repository> [borg arguments]".format(sys.argv[0]), file=sys.stderr)
         print("       {} list".format(sys.argv[0]), file=sys.stderr)
         print("       {} <repository> list-archives <borg list arguments>".format(sys.argv[0]), file=sys.stderr)
         print("")
         print("Options:")
+        print(" -d    Enable debug logging")
+        print(" -h    Display this help message")
         print(" -i    Ask before executing borg command")
         return 1
+
+    if "d" in options:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+
+    logging.basicConfig(level=log_level, format="%(levelname)s %(message)s")
 
     borg_helper = BorgHelper()
     borg_helper.load_configs()
@@ -150,29 +196,24 @@ def main():
     repositories = borg_helper.get_repositories()
 
     if not repositories:
-        print("No repositories configured!", file=sys.stderr)
+        logging.error("No repositories configured!")
         return 1
 
-    if sys.argv[1] == "list":
+    if arguments[0] == "list":
         print("Available repositories:")
 
         for repository_name in sorted(repositories.keys()):
             print("  {} ({})".format(repository_name, repositories[repository_name]["repository"]))
 
         return 0
-
-    if sys.argv[1] == "-i":
-        borg_helper.ask_before_execute = True
-        repository_name = sys.argv[2]
-        arguments = sys.argv[3:]
     else:
-        repository_name = sys.argv[1]
-        arguments = sys.argv[2:]
+        if "i" in options:
+            borg_helper.ask_before_execute = True
 
-    try:
-        return borg_helper.execute_command(repository_name, arguments)
-    except ConfigError as error:
-        print(error, file=sys.stderr)
+        try:
+            return borg_helper.execute_command(arguments[0], arguments[1:])
+        except ConfigError as error:
+            logging.error(error)
 
 
 if __name__ == "__main__":
