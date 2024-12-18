@@ -12,7 +12,7 @@ The configuration is in JSON and expects at least a `repositories` property cont
 
 The repository configuration should have at least a `repository` property specifying the location of that repository. But you might also specify `passphrase` to define the passphrase of that repository as well as `ssh_key` to define the location of your SSH key if using SSH for the repository.
 
-If your borg binary is not in the default search paths, you might specify the path to it using the `borg-binary` property.
+If your borg binary is not in the default search paths, you might specify the path to it using the `borg_binary` property.
 
 ## Requirements
 
@@ -55,7 +55,7 @@ Example: `borg-helper.py my-repository list-archives some/path/inside/the/backup
 
 ```json
 {
-  "borg-binary": "/path/to/borg",
+  "borg_binary": "/path/to/borg",
   "aliases": {
     "create": "create --progress --stats --verbose",
     "prune": "prune --list --stats --verbose"
