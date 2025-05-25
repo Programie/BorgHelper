@@ -114,7 +114,11 @@ class BorgHelper:
         return subprocess.run(command_line, env=borg_env, shell=True, **kwargs)
 
     def execute_custom_borg_command(self, repository_name: str, arguments: list) -> Optional[int]:
-        if len(arguments) and arguments[0] == "list-archives":
+        if not len(arguments):
+            return None
+
+        custom_command = arguments[0]
+        if custom_command == "list-archives":
             borg_process = self.execute_borg(repository_name, ["list", "--short"], stdout=subprocess.PIPE, check=True)
             if not borg_process:
                 return 1
@@ -129,6 +133,37 @@ class BorgHelper:
                 highest_exit_code = max(highest_exit_code, borg_process.returncode)
 
             return highest_exit_code
+        elif custom_command == "list-removed-items":
+            borg_process = self.execute_borg(repository_name, ["list", "--last", "2", "--json"], stdout=subprocess.PIPE, check=True)
+            if not borg_process:
+                return 1
+
+            archives = json.loads(borg_process.stdout).get("archives", [])
+
+            # Only execute compare if there are at least 2 archives to compare
+            if len(archives) < 2:
+                return 0
+
+            previous_backup = archives[0].get("archive")
+            current_backup = archives[1].get("archive")
+
+            borg_process = self.execute_borg(repository_name, ["diff", f"::{previous_backup}", current_backup, "--json-lines"], stdout=subprocess.PIPE, check=True)
+            if not borg_process:
+                return 1
+
+            for line in borg_process.stdout.decode("utf-8").splitlines():
+                line = json.loads(line)
+
+                path = line.get("path")
+
+                for change in line.get("changes", []):
+                    change_type = change.get("type")
+                    if change_type == "removed":
+                        print(f"Removed file: {path}")
+                    elif change_type == "removed directory":
+                        print(f"Removed directory: {path}")
+
+            return 0
 
         return None
 

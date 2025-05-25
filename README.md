@@ -54,6 +54,14 @@ The command will list all files in all archives of the specified repository. You
 
 Example: `borg-helper.py my-repository list-archives some/path/inside/the/backup`
 
+### list-removed-items
+
+The `list-removed-items` command can be used to list all files and directories which have been removed in the last backup compared to the previous one.
+
+This can be useful to detect accidental removed files while creating a backup.
+
+For that, simply create a new backup which might removes some files and execute the `list-removed-items` command afterwards to see which files were removed. In case there are some files which were removed accidentally, you can restore them from the previous backup (i.e. by mounting the previous backup an copying the files).
+
 ## Example configuration
 
 ```json
