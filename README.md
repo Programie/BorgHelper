@@ -62,6 +62,13 @@ This can be useful to detect accidental removed files while creating a backup.
 
 For that, simply create a new backup which might removes some files and execute the `list-removed-items` command afterwards to see which files were removed. In case there are some files which were removed accidentally, you can restore them from the previous backup (i.e. by mounting the previous backup an copying the files).
 
+Available options:
+
+* `--fail`: Return with exit code 1 in case removed files or directories are found
+* `--color`: Use color to highlight removed items
+
+Additionally to that, a path within the backup can be specified to limit the diff to that specific path. This also supports borg patterns (see the documentation for the path argument in `borg diff`).
+
 ## Example configuration
 
 ```json

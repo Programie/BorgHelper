@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+import argparse
 import json
 import logging
 import os
@@ -134,6 +135,13 @@ class BorgHelper:
 
             return highest_exit_code
         elif custom_command == "list-removed-items":
+            arg_parser = argparse.ArgumentParser(f"{os.path.basename(sys.argv[0])} {custom_command}")
+            arg_parser.add_argument("--fail", action="store_true", help="return with exit code 1 in case removed files or directories are found")
+            arg_parser.add_argument("--color", action="store_true", help="use color to highlight removed items")
+            arg_parser.add_argument("path", help="limit to this path within the backup")
+
+            arguments = arg_parser.parse_args(arguments[1:])
+
             borg_process = self.execute_borg(repository_name, ["list", "--last", "2", "--json"], stdout=subprocess.PIPE, check=True)
             if not borg_process:
                 return 1
@@ -147,9 +155,16 @@ class BorgHelper:
             previous_backup = archives[0].get("archive")
             current_backup = archives[1].get("archive")
 
-            borg_process = self.execute_borg(repository_name, ["diff", f"::{previous_backup}", current_backup, "--json-lines"], stdout=subprocess.PIPE, check=True)
+            diff_command = ["diff", "--json-lines", f"::{previous_backup}", current_backup]
+
+            if arguments.path:
+                diff_command.append(arguments.path)
+
+            borg_process = self.execute_borg(repository_name, diff_command, stdout=subprocess.PIPE, check=True)
             if not borg_process:
                 return 1
+
+            exit_code = 0
 
             for line in borg_process.stdout.decode("utf-8").splitlines():
                 line = json.loads(line)
@@ -159,11 +174,15 @@ class BorgHelper:
                 for change in line.get("changes", []):
                     change_type = change.get("type")
                     if change_type == "removed":
-                        print(f"Removed file: {path}")
+                        print(f"\033[31mRemoved file: {path}\033[0m")
+                        if arguments.fail:
+                            exit_code = 1
                     elif change_type == "removed directory":
-                        print(f"Removed directory: {path}")
+                        print(f"\033[31mRemoved directory: {path}\033[0m")
+                        if arguments.fail:
+                            exit_code = 1
 
-            return 0
+            return exit_code
 
         return None
 
