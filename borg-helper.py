@@ -255,6 +255,7 @@ def main():
             return borg_helper.execute_command(arguments[0], arguments[1:])
         except ConfigError as error:
             logging.error(error)
+            return 1
 
 
 if __name__ == "__main__":
