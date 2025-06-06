@@ -138,7 +138,7 @@ class BorgHelper:
             arg_parser = argparse.ArgumentParser(f"{os.path.basename(sys.argv[0])} {custom_command}")
             arg_parser.add_argument("--fail", action="store_true", help="return with exit code 1 in case removed files or directories are found")
             arg_parser.add_argument("--color", action="store_true", help="use color to highlight removed items")
-            arg_parser.add_argument("path", help="limit to this path within the backup")
+            arg_parser.add_argument("path", help="limit to this path within the backup", nargs="?")
 
             arguments = arg_parser.parse_args(arguments[1:])
 
