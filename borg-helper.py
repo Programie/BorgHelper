@@ -142,6 +142,12 @@ class BorgHelper:
 
             arguments = arg_parser.parse_args(arguments[1:])
 
+            def print_color(string: str):
+                if arguments.color:
+                    print(f"\033[31m{string}\033[0m")
+                else:
+                    print(string)
+
             borg_process = self.execute_borg(repository_name, ["list", "--last", "2", "--json"], stdout=subprocess.PIPE, check=True)
             if not borg_process:
                 return 1
@@ -174,11 +180,11 @@ class BorgHelper:
                 for change in line.get("changes", []):
                     change_type = change.get("type")
                     if change_type == "removed":
-                        print(f"\033[31mRemoved file: {path}\033[0m")
+                        print_color(f"Removed file: {path}")
                         if arguments.fail:
                             exit_code = 1
                     elif change_type == "removed directory":
-                        print(f"\033[31mRemoved directory: {path}\033[0m")
+                        print_color(f"Removed directory: {path}")
                         if arguments.fail:
                             exit_code = 1
 
